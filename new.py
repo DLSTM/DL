@@ -118,3 +118,91 @@ history = model.fit(
     epochs=10,
     validation_data=(x_test, y_test)
 )
+
+
+#############################################
+
+
+import tensorflow as tf
+from keras.models import Sequential
+from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
+import matplotlib.pyplot as plt
+import numpy as np
+
+# CIFAR-10 class labels
+class_names = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
+
+# Load and preprocess CIFAR-10 dataset
+(x_train, y_train), (x_test, y_test) = tf.keras.datasets.cifar10.load_data()
+x_train = x_train.astype('float32') / 255.0
+x_test = x_test.astype('float32') / 255.0
+
+# Define the CNN model
+model = Sequential()
+model.add(Conv2D(32, (3, 3), activation='relu', input_shape=(32, 32, 3)))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+
+model.add(Conv2D(64, (3, 3), activation='relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+
+model.add(Conv2D(64, (3, 3), activation='relu'))
+
+model.add(Flatten())
+model.add(Dense(64, activation='relu'))
+model.add(Dense(10, activation='softmax'))  # softmax for classification
+
+# Compile the model
+model.compile(
+    optimizer='adam',
+    loss='sparse_categorical_crossentropy',
+    metrics=['accuracy']
+)
+
+# Train the model
+history = model.fit(
+    x_train, y_train,
+    epochs=10,
+    validation_data=(x_test, y_test)
+)
+
+# Plot training & validation accuracy values
+plt.figure(figsize=(12, 5))
+
+plt.subplot(1, 2, 1)
+plt.plot(history.history['accuracy'], label='Train Accuracy')
+plt.plot(history.history['val_accuracy'], label='Val Accuracy')
+plt.title('Model Accuracy')
+plt.xlabel('Epoch')
+plt.ylabel('Accuracy')
+plt.legend()
+
+# Plot training & validation loss values
+plt.subplot(1, 2, 2)
+plt.plot(history.history['loss'], label='Train Loss')
+plt.plot(history.history['val_loss'], label='Val Loss')
+plt.title('Model Loss')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.legend()
+
+plt.tight_layout()
+plt.show()
+
+# Object Detection: Predicting the class of a test image
+def predict_image(image_index):
+    # Get a random test image and normalize it
+    image = x_test[image_index]
+    image_input = np.expand_dims(image, axis=0)  # Add batch dimension
+
+    # Predict the class of the image
+    prediction = model.predict(image_input)
+    predicted_class = np.argmax(prediction)  # Get the class with the highest probability
+
+    # Display the image and prediction
+    plt.imshow(image)
+    plt.title(f"Predicted: {class_names[predicted_class]}")
+    plt.axis('off')  # Hide axes
+    plt.show()
+
+# Test: Predict an image from the test set (you can change the index)
+predict_image(11)
