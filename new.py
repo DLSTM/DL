@@ -76,3 +76,45 @@ plt.ylabel("Predicted")
 plt.title("Multiple Linear Regression")
 plt.grid(True)
 plt.show()
+
+
+cifar10
+
+
+import tensorflow as tf
+from keras.models import Sequential
+from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
+import matplotlib.pyplot as plt
+
+# Load and normalize CIFAR-10 dataset
+(x_train, y_train), (x_test, y_test) = tf.keras.datasets.cifar10.load_data()
+x_train = x_train.astype('float32') / 255.0
+x_test = x_test.astype('float32') / 255.0
+
+# Define the CNN model
+model = Sequential()
+model.add(Conv2D(32, (3, 3), activation='relu', input_shape=(32, 32, 3)))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+
+model.add(Conv2D(64, (3, 3), activation='relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+
+model.add(Conv2D(64, (3, 3), activation='relu'))
+
+model.add(Flatten())
+model.add(Dense(64, activation='relu'))
+model.add(Dense(10, activation = 'softmax'))  # No activation (logits) since we use from_logits=True in loss
+
+# Compile the model
+model.compile(
+    optimizer='adam',
+    loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+    metrics=['accuracy']
+)
+
+# Train the model
+history = model.fit(
+    x_train, y_train,
+    epochs=10,
+    validation_data=(x_test, y_test)
+)
