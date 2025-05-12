@@ -206,3 +206,92 @@ def predict_image(image_index):
 
 # Test: Predict an image from the test set (you can change the index)
 predict_image(11)
+
+#########################################################
+
+
+## data augmentation
+
+import tensorflow as tf
+import matplotlib.pyplot as plt
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.datasets import cifar10
+
+# Set random seed for reproducibility
+tf.random.set_seed(42)
+
+# Load and Normalize CIFAR-10 Data
+(x_train, y_train), (x_test, y_test) = cifar10.load_data()
+x_train = x_train / 255.0
+x_test = x_test / 255.0
+
+# Data Augmentation
+datagen = ImageDataGenerator(
+    rotation_range=20,
+    width_shift_range=0.2,
+    height_shift_range=0.2,
+    zoom_range=0.2,
+    horizontal_flip=True
+)
+datagen.fit(x_train)
+
+# Model WITHOUT Data Augmentation
+model_no_aug = Sequential()
+model_no_aug.add(Conv2D(32, (3,3), activation='relu', input_shape=(32,32,3)))
+model_no_aug.add(MaxPooling2D(2,2))
+model_no_aug.add(Conv2D(64, (3,3), activation='relu'))
+model_no_aug.add(MaxPooling2D(2,2))
+model_no_aug.add(Flatten())
+model_no_aug.add(Dense(128, activation='relu'))
+model_no_aug.add(Dense(10, activation='softmax'))
+
+model_no_aug.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+
+# Train WITHOUT augmentation
+history_no_aug = model_no_aug.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=10, batch_size=32)
+
+# Model WITH Data Augmentation
+model_aug = Sequential()
+model_aug.add(Conv2D(32, (3,3), activation='relu', input_shape=(32,32,3)))
+model_aug.add(MaxPooling2D(2,2))
+model_aug.add(Conv2D(64, (3,3), activation='relu'))
+model_aug.add(MaxPooling2D(2,2))
+model_aug.add(Flatten())
+model_aug.add(Dense(128, activation='relu'))
+model_aug.add(Dense(10, activation='softmax'))
+
+model_aug.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+
+# Train WITH augmentation
+history_aug = model_aug.fit(datagen.flow(x_train, y_train, batch_size=32), validation_data=(x_test, y_test), epochs=10)
+
+# Plot Accuracy and Loss Comparison
+plt.figure(figsize=(12, 5))
+
+# Accuracy
+plt.subplot(1, 2, 1)
+plt.plot(history_no_aug.history['accuracy'], label='Train Acc (No Aug)')
+plt.plot(history_no_aug.history['val_accuracy'], label='Val Acc (No Aug)')
+plt.plot(history_aug.history['accuracy'], label='Train Acc (Aug)')
+plt.plot(history_aug.history['val_accuracy'], label='Val Acc (Aug)')
+plt.title('Accuracy Comparison')
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy')
+plt.legend()
+
+# Loss
+plt.subplot(1, 2, 2)
+plt.plot(history_no_aug.history['loss'], label='Train Loss (No Aug)')
+plt.plot(history_no_aug.history['val_loss'], label='Val Loss (No Aug)')
+plt.plot(history_aug.history['loss'], label='Train Loss (Aug)')
+plt.plot(history_aug.history['val_loss'], label='Val Loss (Aug)')
+plt.title('Loss Comparison')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.legend()
+
+plt.tight_layout()
+plt.show()
+
