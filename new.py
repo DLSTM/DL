@@ -346,3 +346,65 @@ else:
     plt.ylabel('Stock Price')
     plt.legend()
     plt.show()
+
+
+
+###
+
+
+# Simplified 1-Day-Lag LSTM Temperature Forecasting (Fixed Column Name)
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense
+
+# Load and clean data
+df = pd.read_csv('testset.csv', parse_dates=['datetime_utc'], index_col='datetime_utc')
+# Strip any whitespace from column names
+df.columns = df.columns.str.strip()
+
+# Extract temperature series, replace missing marker -9999, drop NaNs
+temps_clean = df['_tempm'].replace(-9999, np.nan).dropna().values
+
+# Prepare 1-day lag inputs and targets
+X = temps_clean[:-1].reshape(-1, 1, 1)
+y = temps_clean[1:]
+
+# Split into training and testing sets (80/20), preserving time order
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, shuffle=False
+)
+
+# Build and compile LSTM model
+model = Sequential([
+    LSTM(32, input_shape=(1, 1)),
+    Dense(1)
+])
+model.compile(optimizer='adam', loss='mean_squared_error')
+
+# Train model
+model.fit(
+    X_train, y_train,
+    epochs=50,
+    batch_size=16,
+    validation_data=(X_test, y_test),
+    verbose=1
+)
+
+# Predict on test set
+predictions = model.predict(X_test)
+
+# Plot actual vs. predicted
+test_idx = np.arange(len(y_train), len(y_train) + len(y_test))
+plt.figure(figsize=(10, 5))
+plt.plot(test_idx, y_test, label='Actual Temperature')
+plt.plot(test_idx, predictions.flatten(), label='Predicted Temperature')
+plt.title('1-Day-Lag LSTM Temperature Forecasting')
+plt.xlabel('Sample Index')
+plt.ylabel('Temperature')
+plt.legend()
+plt.tight_layout()
+plt.show()
+
