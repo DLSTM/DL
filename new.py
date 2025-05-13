@@ -295,3 +295,54 @@ plt.legend()
 plt.tight_layout()
 plt.show()
 
+####
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import SimpleRNN, Dense
+from sklearn.model_selection import train_test_split
+import yfinance as yf
+
+# Download historical stock data
+company = 'META'
+start_date = '2010-01-01'
+end_date = '2025-04-20'
+df = yf.download(company, start=start_date, end=end_date, interval="1d", progress=False)
+
+
+# Check if data was downloaded
+if df.empty:
+    print("No data downloaded. Please check ticker symbol, dates, or your internet connection.")
+else:
+    # Prepare input and target data
+    data = df['Close'].values
+    X = data[:-1].reshape(-1, 1, 1)  # shape = (samples, timesteps=1, features=1)
+    y = data[1:]                     # target is next day's price
+
+    # Split data into training and testing (80/20), preserving time order
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, shuffle=False)
+
+    # Build SimpleRNN model
+    model = Sequential([
+        SimpleRNN(16, activation='relu', input_shape=(1, 1)),
+        Dense(1)
+    ])
+    model.compile(optimizer='adam', loss='mean_squared_error')
+
+    # Train the model
+    model.fit(X_train, y_train, epochs=20, batch_size=32, validation_data=(X_test, y_test), verbose=1)
+
+    # Make predictions
+    predictions = model.predict(X_test)
+
+    # Plot results
+    plt.figure(figsize=(12, 6))
+    plt.plot(y_test, label='Actual Price')
+    plt.plot(predictions, label='Predicted Price')
+    plt.title(f'{company} Stock Price Prediction using SimpleRNN (1-Day Lag)')
+    plt.xlabel('Time')
+    plt.ylabel('Stock Price')
+    plt.legend()
+    plt.show()
